@@ -56,6 +56,11 @@ app.post('/envelopes/withdraw', (req, res) => {
 }
 );
 
+app.post('envelopes/delete', (req, res) => {
+  const { id } = req.body;
+  envelopes = envelopes.filter(e => e.id != parseInt(id));
+});
+
 
 app.listen(PORT, () => {
   console.log('Server running at http://localhost:3000/');
