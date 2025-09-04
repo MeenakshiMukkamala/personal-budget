@@ -37,6 +37,26 @@ app.get('/envelopes', (req, res) => {
   res.json({ envelopes, totalBudget });
 });
 
+app.post('/envelopes/withdraw', (req, res) => {
+  const { id, amount } = req.body;
+  const envelope = envelopes.find(e => e.id === parseInt(id));
+  if (!envelope) {
+    return res.status(404).json({ message: 'Envelope not found' });
+  }
+  if (envelope.amount < amount) {
+    return res.status(400).json({ message: 'Insufficient funds in envelope' });
+  }
+  envelope.amount -= amount;
+  totalBudget -= amount;
+  res.json({
+    message: 'Withdrawal successful',
+    envelope,
+    totalBudget
+  });
+}
+);
+
+
 app.listen(PORT, () => {
   console.log('Server running at http://localhost:3000/');
 });
