@@ -23,21 +23,25 @@ function getSecretHash(username, clientId, clientSecret) {
 }
 
 //global username variable
-let username;
+const tempUserStore = {};
+
 // Cognito signup route
 app.post('/signup', async (req, res) => {
   const { email, password } = req.body;
   const clientId = '79bsi302esn08u8demmdgg8lig';
   const clientSecret = '13mvan5d2b3urj3f17o2h73udeln9r3d167kdfj7tvjd8adp79u';
 
-  username = email.split('@')[0] + Date.now(); // generate unique username
+  const username = email.split('@')[0] + Date.now();
+
+  // Store it in tempUserStore immediately
+  tempUserStore[email] = username;
 
   const params = {
     ClientId: clientId,
     Username: username,
     Password: password,
     UserAttributes: [{ Name: 'email', Value: email }],
-    SecretHash: getSecretHash(username, clientId, clientSecret)
+    SecretHash: getSecretHash(tempUserStore[email], clientId, clientSecret)
   };
 
   try {
@@ -54,7 +58,10 @@ app.post('/confirm', async (req, res) => {
   const { email, code } = req.body;
   const clientId = '79bsi302esn08u8demmdgg8lig';
   const clientSecret = '13mvan5d2b3urj3f17o2h73udeln9r3d167kdfj7tvjd8adp79u';
-
+    const username = tempUserStore[email];
+    if (!username) {
+      return res.status(400).json({ message: 'User not found. Did you sign up?' });
+    }
   try {
         await cognito.send(new ConfirmSignUpCommand({
         ClientId: clientId,
@@ -64,6 +71,42 @@ app.post('/confirm', async (req, res) => {
       }));
 
     res.json({ message: 'Email confirmed! You can now log in.' });
+    tempUserStore[email] = username;
+  } catch (err) {
+    console.error(err);
+    res.status(400).json({ message: err.message });
+  }
+});
+
+
+app.post('/login', async (req, res) => {
+  const { email, password } = req.body;
+  const clientId = '79bsi302esn08u8demmdgg8lig';
+  const clientSecret = '13mvan5d2b3urj3f17o2h73udeln9r3d167kdfj7tvjd8adp79u';
+
+  const username = tempUserStore[email]; // retrieve the actual Cognito username
+
+  if (!username) {
+    return res.status(400).json({ message: 'User not found. Did you sign up?' });
+  }
+
+  try {
+    const authCommand = new InitiateAuthCommand({
+      AuthFlow: 'USER_PASSWORD_AUTH',
+      ClientId: clientId,
+      AuthParameters: {
+        USERNAME: username,
+        PASSWORD: password,
+        SECRET_HASH: getSecretHash(tempUserStore[email], clientId, clientSecret)
+      }
+    });
+
+    const response = await cognito.send(authCommand);
+    // response.AuthenticationResult contains IdToken, AccessToken, RefreshToken
+    res.json({
+      message: 'Login successful!',
+      token: response.AuthenticationResult.IdToken
+    });
   } catch (err) {
     console.error(err);
     res.status(400).json({ message: err.message });
