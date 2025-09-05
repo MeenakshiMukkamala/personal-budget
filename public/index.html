@@ -50,6 +50,7 @@
       padding: 2px;
       background: linear-gradient(135deg, rgba(144,205,244,0.7), rgba(43,108,176,0.3));
       -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+      mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
       -webkit-mask-composite: xor; mask-composite: exclude;
       pointer-events: none;
     }
@@ -196,9 +197,27 @@
         }
 
         const data = await res.json();
-        notice.className = 'notice success';
-        notice.textContent = data.message || 'Logged in!';
-        // TODO: redirect to dashboard
+notice.className = 'notice success';
+notice.textContent = data.message || 'Logged in!';
+// TODO: redirect to dashboard
+
+// Example: Fetch envelopes using the token (replace data.token with your actual token property)
+if (data.token) {
+  fetch('/envelopes', {
+    method: 'GET',
+    headers: {
+      'Authorization': 'Bearer ' + data.token
+    }
+  })
+    .then(response => response.json())
+    .then(envelopeData => {
+      console.log('Envelopes:', envelopeData);
+      // You can display envelopeData on the page here
+    })
+    .catch(error => {
+      console.error('Error fetching envelopes:', error);
+    });
+}
       } catch (err) {
         notice.className = 'notice error';
         notice.textContent = err.message || 'Something went wrong';

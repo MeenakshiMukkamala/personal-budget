@@ -2,16 +2,52 @@ const express = require('express');
 const app = express();
 const PORT = 3000;
 
-app.use(express.json());
-
 app.use(express.static('public'));
+app.use(express.json()); 
+const crypto = require('crypto');
 
+const { CognitoIdentityProviderClient, SignUpCommand } = require('@aws-sdk/client-cognito-identity-provider');
+const cognito = new CognitoIdentityProviderClient({ region: 'us-west-1' });
+
+// Helper to compute SECRET_HASH
+function getSecretHash(username, clientId, clientSecret) {
+  return crypto
+    .createHmac('SHA256', clientSecret)
+    .update(username + clientId)
+    .digest('base64');
+}
+
+// Cognito signup route
+app.post('/signup', async (req, res) => {
+  const { email, password } = req.body;
+  const clientId = '79bsi302esn08u8demmdgg8lig';
+  const clientSecret = '13mvan5d2b3urj3f17o2h73udeln9r3d167kdfj7tvjd8adp79u';
+
+  // Generate a unique username (not an email)
+  const username = email.split('@')[0] + Date.now();
+
+  const params = {
+    ClientId: clientId,
+    Username: username,
+    Password: password,
+    UserAttributes: [{ Name: 'email', Value: email }],
+    SecretHash: getSecretHash(username, clientId, clientSecret)
+  };
+
+  try {
+    const command = new SignUpCommand(params);
+    await cognito.send(command);
+    res.json({ message: 'Sign up successful! Please check your email for confirmation.' });
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
 
 let envelopes = [];
 let totalBudget = 0;
 
 //Create a new envelope
-app.post('/envelopes', (req, res) => {
+app.post('/envelopes',(req, res) => {
   const { category, amount } = req.body;
   let newEnvelope = { id: envelopes.length + 1, category, amount }
   console.log(envelopes)
@@ -63,7 +99,6 @@ app.post('/envelopes/withdraw', (req, res) => {
 app.post('/envelopes/delete', (req, res) => {
   const { id } = req.body;
   envelopes = envelopes.filter(e => e.id != parseInt(id));
-  res.json({ message: 'Envelope deleted', envelopes, totalBudget });
 });
 
 //Transfer money between envelopes
@@ -76,8 +111,8 @@ app.post('/envelopes/transfer/:from/:to', (req, res) => {
   if (!envelope_to) {
     return res.status(404).json({ message: 'Envelope to not found' });
   }
-  envelope_from.amount -= parseFloat(req.body.amount);
-  envelope_to.amount += parseFloat(req.body.amount);
+  envelope_from.amount -= req.body.amount;
+  envelope_to.amount += req.body.amount;
   res.json({
     message: 'Transfer successful',
     envelope_from,
