@@ -4,6 +4,7 @@ const PORT = 3000;
 
 app.use(express.json());
 
+app.use(express.static('public'));
 
 
 let envelopes = [];
@@ -59,9 +60,10 @@ app.post('/envelopes/withdraw', (req, res) => {
 );
 
 //Delete an envelope
-app.post('envelopes/delete', (req, res) => {
+app.post('/envelopes/delete', (req, res) => {
   const { id } = req.body;
   envelopes = envelopes.filter(e => e.id != parseInt(id));
+  res.json({ message: 'Envelope deleted', envelopes, totalBudget });
 });
 
 //Transfer money between envelopes
@@ -74,8 +76,8 @@ app.post('/envelopes/transfer/:from/:to', (req, res) => {
   if (!envelope_to) {
     return res.status(404).json({ message: 'Envelope to not found' });
   }
-  envelope_from.amount -= req.body.amount;
-  envelope_to.amount += req.body.amount;
+  envelope_from.amount -= parseFloat(req.body.amount);
+  envelope_to.amount += parseFloat(req.body.amount);
   res.json({
     message: 'Transfer successful',
     envelope_from,
