@@ -6,7 +6,12 @@ app.use(express.static('public'));
 app.use(express.json()); 
 const crypto = require('crypto');
 
-const { CognitoIdentityProviderClient, SignUpCommand } = require('@aws-sdk/client-cognito-identity-provider');
+const { 
+  CognitoIdentityProviderClient, 
+  SignUpCommand, 
+  ConfirmSignUpCommand,
+  InitiateAuthCommand // for login
+} = require('@aws-sdk/client-cognito-identity-provider');
 const cognito = new CognitoIdentityProviderClient({ region: 'us-west-1' });
 
 // Helper to compute SECRET_HASH
@@ -17,14 +22,15 @@ function getSecretHash(username, clientId, clientSecret) {
     .digest('base64');
 }
 
+//global username variable
+let username;
 // Cognito signup route
 app.post('/signup', async (req, res) => {
   const { email, password } = req.body;
   const clientId = '79bsi302esn08u8demmdgg8lig';
   const clientSecret = '13mvan5d2b3urj3f17o2h73udeln9r3d167kdfj7tvjd8adp79u';
 
-  // Generate a unique username (not an email)
-  const username = email.split('@')[0] + Date.now();
+  username = email.split('@')[0] + Date.now(); // generate unique username
 
   const params = {
     ClientId: clientId,
@@ -39,6 +45,27 @@ app.post('/signup', async (req, res) => {
     await cognito.send(command);
     res.json({ message: 'Sign up successful! Please check your email for confirmation.' });
   } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+
+  
+});
+app.post('/confirm', async (req, res) => {
+  const { email, code } = req.body;
+  const clientId = '79bsi302esn08u8demmdgg8lig';
+  const clientSecret = '13mvan5d2b3urj3f17o2h73udeln9r3d167kdfj7tvjd8adp79u';
+
+  try {
+        await cognito.send(new ConfirmSignUpCommand({
+        ClientId: clientId,
+        Username: username,
+        ConfirmationCode: code,
+        SecretHash: getSecretHash(username, clientId, clientSecret)
+      }));
+
+    res.json({ message: 'Email confirmed! You can now log in.' });
+  } catch (err) {
+    console.error(err);
     res.status(400).json({ message: err.message });
   }
 });
