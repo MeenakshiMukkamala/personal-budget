@@ -1,15 +1,86 @@
 const express = require('express');
+const jwt = require('jsonwebtoken');
+const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
+const { DynamoDBDocumentClient, PutCommand } = require('@aws-sdk/lib-dynamodb');
+const { v4: uuidv4 } = require('uuid');
+require('dotenv').config();
+
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
-app.use(express.static('public'));
+// Middleware
+app.use(express.json());
 
-
+// Simple health endpoint
 app.get('/', (req, res) => {
-  res.send('Hello World!')
+  res.send('API is running');
+});
+
+// JWT auth middleware
+function authenticateToken(req, res, next) {
+  const authHeader = req.headers['authorization'] || req.headers['Authorization'];
+  if (!authHeader) {
+    return res.status(401).json({ error: 'Missing Authorization header' });
+  }
+  const [scheme, token] = authHeader.split(' ');
+  if (scheme !== 'Bearer' || !token) {
+    return res.status(401).json({ error: 'Invalid Authorization header format' });
+  }
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    return res.status(500).json({ error: 'Server misconfigured: JWT_SECRET missing' });
+  }
+  try {
+    const decoded = jwt.verify(token, secret);
+    req.user = decoded;
+    next();
+  } catch (err) {
+    return res.status(401).json({ error: 'Invalid or expired token' });
+  }
 }
-)
+
+// DynamoDB setup
+const dynamoClient = new DynamoDBClient({
+  region: process.env.AWS_REGION || 'us-east-1',
+});
+const ddbDocClient = DynamoDBDocumentClient.from(dynamoClient);
+
+// Create envelope endpoint
+app.post('/api/envelopes', authenticateToken, async (req, res) => {
+  const { name, budget } = req.body || {};
+  if (!name || typeof name !== 'string') {
+    return res.status(400).json({ error: 'name is required' });
+  }
+  if (budget === undefined || budget === null || Number.isNaN(Number(budget))) {
+    return res.status(400).json({ error: 'budget is required and must be a number' });
+  }
+
+  const tableName = process.env.ENVELOPES_TABLE || 'Envelopes';
+  const nowIso = new Date().toISOString();
+  const item = {
+    id: uuidv4(),
+    userId: req.user.sub || req.user.userId || req.user.id || 'unknown',
+    name,
+    budget: Number(budget),
+    createdAt: nowIso,
+    updatedAt: nowIso,
+  };
+
+  try {
+    await ddbDocClient.send(
+      new PutCommand({
+        TableName: tableName,
+        Item: item,
+        ConditionExpression: 'attribute_not_exists(id)',
+      })
+    );
+    return res.status(201).json({ envelope: item });
+  } catch (err) {
+    console.error('Failed to write to DynamoDB', { error: err });
+    return res.status(500).json({ error: 'Failed to create envelope' });
+  }
+});
 
 app.listen(PORT, () => {
-  console.log('Server running at http://localhost:3000/');
+  console.log(`Server running at http://localhost:${PORT}/`);
 });
