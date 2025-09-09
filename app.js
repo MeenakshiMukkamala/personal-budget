@@ -162,7 +162,7 @@ app.post('/envelopes', authenticateJWT, async (req, res) => {
 });
 
 app.get('/envelopes', authenticateJWT, async (req, res) => {
-  const username = req.user?.email || "test@example.com"; // from JWT
+  const username = req.user?.email; // from JWT
 
   try {
     const result = await pool.query(
@@ -176,8 +176,33 @@ app.get('/envelopes', authenticateJWT, async (req, res) => {
   }
 });
 
+//Withdraw money from an envelope
+app.post('/envelopes/withdraw', authenticateJWT, async (req, res) => {
+  const { category, amount } = req.body;
+
+  const username = req.user?.email; 
+
+  try {
+    const result = await pool.query(
+      'UPDATE envelopes SET amount = amount - $3 WHERE username = $1 AND category = $2 AND amount >= $3 RETURNING *;',
+      [username, category, amount]
+    );
+    if (result.rows.length === 0) {
+        return res.status(400).json({ message: 'Insufficient funds in envelope' });
+    }
+
+    res.status(201).json({
+      message: 'Money withdrawn',
+      envelope: result.rows[0]
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Database error' });
+  }
+});
+
 /** 
-//Get a specific envelope by ID
+//Get a specific envelope by Category
 app.get('/envelopes/:id', (req, res) => {
   const envelope = envelopes.find(e => e.id === parseInt(req.params.id));
   if (!envelope) {
@@ -188,25 +213,7 @@ app.get('/envelopes/:id', (req, res) => {
 
 
 
-//Withdraw money from an envelope
-app.post('/envelopes/withdraw', (req, res) => {
-  const { id, amount } = req.body;
-  const envelope = envelopes.find(e => e.id === parseInt(id));
-  if (!envelope) {
-    return res.status(404).json({ message: 'Envelope not found' });
-  }
-  if (envelope.amount < amount) {
-    return res.status(400).json({ message: 'Insufficient funds in envelope' });
-  }
-  envelope.amount -= amount;
-  totalBudget -= amount;
-  res.json({
-    message: 'Withdrawal successful',
-    envelope,
-    totalBudget
-  });
-}
-);
+
 
 //Delete an envelope
 app.post('/envelopes/delete', (req, res) => {

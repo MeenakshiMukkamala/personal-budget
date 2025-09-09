@@ -126,8 +126,8 @@
     <form id="withdrawForm">
       <h2>Withdraw Money</h2>
       <div class="field">
-        <label for="withdrawId">Envelope ID</label>
-        <input id="withdrawId" type="number" min="1" required />
+        <label for="withdrawCategory">Envelope Category</label>
+        <input id="withdrawCategory" type="text" required />
       </div>
       <div class="field">
         <label for="withdrawAmount">Amount</label>
@@ -161,8 +161,6 @@
       <tbody id="envelopeTableBody"></tbody>
     </table>
   </main>
-
-  <body>
  
 <script>
     console.log("HELLO:");
@@ -272,24 +270,30 @@ createForm.addEventListener('submit', async e => {
   // Withdraw money
   withdrawForm.addEventListener('submit', async e => {
     e.preventDefault();
-    const id = document.getElementById('withdrawId').value;
-    const amount = parseFloat(document.getElementById('withdrawAmount').value);
+   const category = document.getElementById('withdrawCategory').value.trim();
+  const amount = parseFloat(document.getElementById('withdrawAmount').value);
 
-    try {
-      const res = await fetch('/envelopes/withdraw', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, amount })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message);
-      withdrawNotice.textContent = data.message;
-      withdrawNotice.className = 'notice success';
-      fetchEnvelopes();
-    } catch (err) {
-      withdrawNotice.textContent = err.message;
-      withdrawNotice.className = 'notice error';
-    }
+  try {
+    const res = await fetch('/envelopes/withdraw', {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ category, amount })
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || "Failed to withdraw from envelope");
+
+    withdrawNotice.textContent = `Withdrawal Success: ${data.envelope.category} ($${data.envelope.amount})`;
+    withdrawNotice.className = 'notice success';
+
+    fetchEnvelopes();
+  } catch (err) {
+    withdrawNotice.textContent = err.message;
+    withdrawNotice.className = 'notice error';
+  }
   });
 
   // Delete envelope
@@ -316,6 +320,4 @@ createForm.addEventListener('submit', async e => {
   // Load data on startup
   fetchEnvelopes();
 </script>
-
-</body>
 </html> 
