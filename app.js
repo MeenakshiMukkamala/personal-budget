@@ -1,10 +1,38 @@
 const express = require('express');
 const app = express();
 const PORT = 3000;
-
 app.use(express.static('public'));
 app.use(express.json()); 
 const crypto = require('crypto');
+
+const { Pool } = require('pg');
+
+const pool = new Pool({
+  user: 'meenakshi',
+  host: 'localhost',
+  database: 'personalbudget',
+  password: '',
+  port: 5432,
+});
+
+
+const jwt = require('jsonwebtoken');
+
+function authenticateJWT(req, res, next) {
+  const authHeader = req.headers.authorization;
+  if (authHeader) {
+    const token = authHeader.split(' ')[1];
+    try {
+      const decoded = jwt.decode(token); // or verify with secret if needed
+      req.user = { email: decoded.email };
+      next();
+    } catch (err) {
+      return res.sendStatus(403);
+    }
+  } else {
+    res.sendStatus(401);
+  }
+}
 
 const { 
   CognitoIdentityProviderClient, 
@@ -22,8 +50,7 @@ function getSecretHash(username, clientId, clientSecret) {
     .digest('base64');
 }
 
-//global username variable
-const tempUserStore = {};
+
 
 // Cognito signup route
 app.post('/signup', async (req, res) => {
@@ -31,17 +58,14 @@ app.post('/signup', async (req, res) => {
   const clientId = '79bsi302esn08u8demmdgg8lig';
   const clientSecret = '13mvan5d2b3urj3f17o2h73udeln9r3d167kdfj7tvjd8adp79u';
 
-  const username = email.split('@')[0] + Date.now();
-
-  // Store it in tempUserStore immediately
-  tempUserStore[email] = username;
+  const username = email;
 
   const params = {
     ClientId: clientId,
     Username: username,
     Password: password,
     UserAttributes: [{ Name: 'email', Value: email }],
-    SecretHash: getSecretHash(tempUserStore[email], clientId, clientSecret)
+    SecretHash: getSecretHash(username, clientId, clientSecret)
   };
 
   try {
@@ -58,7 +82,7 @@ app.post('/confirm', async (req, res) => {
   const { email, code } = req.body;
   const clientId = '79bsi302esn08u8demmdgg8lig';
   const clientSecret = '13mvan5d2b3urj3f17o2h73udeln9r3d167kdfj7tvjd8adp79u';
-    const username = tempUserStore[email];
+    const username = email;
     if (!username) {
       return res.status(400).json({ message: 'User not found. Did you sign up?' });
     }
@@ -71,7 +95,6 @@ app.post('/confirm', async (req, res) => {
       }));
 
     res.json({ message: 'Email confirmed! You can now log in.' });
-    tempUserStore[email] = username;
   } catch (err) {
     console.error(err);
     res.status(400).json({ message: err.message });
@@ -81,10 +104,11 @@ app.post('/confirm', async (req, res) => {
 
 app.post('/login', async (req, res) => {
   const { email, password } = req.body;
+
   const clientId = '79bsi302esn08u8demmdgg8lig';
   const clientSecret = '13mvan5d2b3urj3f17o2h73udeln9r3d167kdfj7tvjd8adp79u';
 
-  const username = tempUserStore[email]; // retrieve the actual Cognito username
+  const username = email; // retrieve the actual Cognito username
 
   if (!username) {
     return res.status(400).json({ message: 'User not found. Did you sign up?' });
@@ -97,7 +121,7 @@ app.post('/login', async (req, res) => {
       AuthParameters: {
         USERNAME: username,
         PASSWORD: password,
-        SECRET_HASH: getSecretHash(tempUserStore[email], clientId, clientSecret)
+        SECRET_HASH: getSecretHash(username, clientId, clientSecret)
       }
     });
 
@@ -113,24 +137,46 @@ app.post('/login', async (req, res) => {
   }
 });
 
-let envelopes = [];
 let totalBudget = 0;
 
-//Create a new envelope
-app.post('/envelopes',(req, res) => {
+// Create a new envelope
+app.post('/envelopes', authenticateJWT, async (req, res) => {
   const { category, amount } = req.body;
-  let newEnvelope = { id: envelopes.length + 1, category, amount }
-  console.log(envelopes)
-  envelopes.push(newEnvelope);
-  totalBudget += amount;
-  res.status(201).json({
-    message: 'Envelope created',
-    envelope: newEnvelope,
-    totalBudget
-  }); 
 
+  const username = req.user?.email; 
+
+  try {
+    const result = await pool.query(
+      'INSERT INTO envelopes (username, category, amount) VALUES ($1, $2, $3) RETURNING *;',
+      [username, category, amount]
+    );
+
+    res.status(201).json({
+      message: 'Envelope created',
+      envelope: result.rows[0]
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Database error' });
+  }
 });
 
+app.get('/envelopes', authenticateJWT, async (req, res) => {
+  const username = req.user?.email || "test@example.com"; // from JWT
+
+  try {
+    const result = await pool.query(
+      'SELECT * FROM envelopes WHERE username = $1 ORDER BY id',
+      [username]
+    );
+    res.json({ envelopes: result.rows });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Database error' });
+  }
+});
+
+/** 
 //Get a specific envelope by ID
 app.get('/envelopes/:id', (req, res) => {
   const envelope = envelopes.find(e => e.id === parseInt(req.params.id));
@@ -140,10 +186,7 @@ app.get('/envelopes/:id', (req, res) => {
   res.json(envelope);
 });
 
-//Get all envelopes and total budget
-app.get('/envelopes', (req, res) => {
-  res.json({ envelopes, totalBudget });
-});
+
 
 //Withdraw money from an envelope
 app.post('/envelopes/withdraw', (req, res) => {
@@ -188,7 +231,7 @@ app.post('/envelopes/transfer/:from/:to', (req, res) => {
     envelope_from,
     envelope_to
   });
-});
+});*/
 
 //Start the server
 app.listen(PORT, () => {

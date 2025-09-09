@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dashboard</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #d6ebff;
+      --card: #ffffff;
+      --primary: #2b6cb0;
+      --primary-hover: #2c5282;
+      --error: #e53e3e;
+      --success: #2f855a;
+      --input-bg: #f8fbff;
+      --input-border: #cfe8ff;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, sans-serif;
+      background-color: var(--bg);
+      color: #1f1f1f;
+      display: flex;
+      justify-content: center;
+      padding: 2rem;
+    }
+
+    h1 { font-family: Poppins, sans-serif; text-align: center; margin-bottom: 1rem; }
+
+    .card {
+      width: 100%;
+      max-width: 900px;
+      background: var(--card);
+      border-radius: 20px;
+      box-shadow: 0 10px 30px rgba(31, 63, 104, 0.15);
+      padding: 2rem;
+    }
+
+    form { display: grid; gap: 1rem; margin-bottom: 2rem; }
+
+    .field { display: grid; gap: .4rem; }
+    label { font-weight: 600; font-size: .9rem; }
+    input, select {
+      padding: .85rem 1rem;
+      border: 1.5px solid var(--input-border);
+      border-radius: 12px;
+      background: var(--input-bg);
+      font-size: 1rem;
+      outline: none;
+    }
+    input:focus, select:focus { border-color: var(--primary); }
+
+    button {
+      cursor: pointer;
+      border: none;
+      border-radius: 12px;
+      padding: .85rem 1rem;
+      font-weight: 600;
+      background: var(--primary);
+      color: white;
+      transition: all .2s ease;
+    }
+    button:hover { background: var(--primary-hover); }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+    }
+    th, td {
+      border: 1px solid #cfe8ff;
+      padding: .75rem 1rem;
+      text-align: center;
+    }
+    th { background: #e1f0ff; }
+    .notice { margin-top: .5rem; font-size: .9rem; min-height: 1.2rem; }
+    .notice.error { color: var(--error); }
+    .notice.success { color: var(--success); }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <h1>Envelope Dashboard</h1>
+
+    <!-- Create Envelope -->
+    <form id="createEnvelopeForm">
+      <h2>Create Envelope</h2>
+      <div class="field">
+        <label for="newCategory">Category</label>
+        <input id="newCategory" type="text" required />
+      </div>
+      <div class="field">
+        <label for="newAmount">Amount</label>
+        <input id="newAmount" type="number" min="0" step="0.01" required />
+      </div>
+      <button type="submit">Create Envelope</button>
+      <div class="notice" id="createNotice"></div>
+    </form>
+
+    <!-- Transfer Money -->
+    <form id="transferForm">
+      <h2>Transfer Money</h2>
+      <div class="field">
+        <label for="fromEnvelope">From Envelope (ID)</label>
+        <input id="fromEnvelope" type="number" min="1" required />
+      </div>
+      <div class="field">
+        <label for="toEnvelope">To Envelope (ID)</label>
+        <input id="toEnvelope" type="number" min="1" required />
+      </div>
+      <div class="field">
+        <label for="transferAmount">Amount</label>
+        <input id="transferAmount" type="number" min="0" step="0.01" required />
+      </div>
+      <button type="submit">Transfer</button>
+      <div class="notice" id="transferNotice"></div>
+    </form>
+
+    <!-- Withdraw Money -->
+    <form id="withdrawForm">
+      <h2>Withdraw Money</h2>
+      <div class="field">
+        <label for="withdrawId">Envelope ID</label>
+        <input id="withdrawId" type="number" min="1" required />
+      </div>
+      <div class="field">
+        <label for="withdrawAmount">Amount</label>
+        <input id="withdrawAmount" type="number" min="0" step="0.01" required />
+      </div>
+      <button type="submit">Withdraw</button>
+      <div class="notice" id="withdrawNotice"></div>
+    </form>
+
+    <!-- Delete Envelope -->
+    <form id="deleteForm">
+      <h2>Delete Envelope</h2>
+      <div class="field">
+        <label for="deleteId">Envelope ID</label>
+        <input id="deleteId" type="number" min="1" required />
+      </div>
+      <button type="submit">Delete</button>
+      <div class="notice" id="deleteNotice"></div>
+    </form>
+
+    <!-- Envelopes Table -->
+    <h2>Current Envelopes</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Category</th>
+          <th>Amount</th>
+        </tr>
+      </thead>
+      <tbody id="envelopeTableBody"></tbody>
+    </table>
+  </main>
+
+  <body>
+ 
+<script>
+    console.log("HELLO:");
+
+  const token = localStorage.getItem("idToken");
+  console.log("Token:", token);
+
+if (!token) {
+  alert("You are not logged in! Redirecting to login page.");
+  window.location.href = "login.html";
+}
+
+  const createForm = document.getElementById('createEnvelopeForm');
+  const transferForm = document.getElementById('transferForm');
+  const withdrawForm = document.getElementById('withdrawForm');
+  const deleteForm = document.getElementById('deleteForm');
+  const tableBody = document.getElementById('envelopeTableBody');
+
+  // Notices
+  const createNotice = document.getElementById('createNotice');
+  const transferNotice = document.getElementById('transferNotice');
+  const withdrawNotice = document.getElementById('withdrawNotice');
+  const deleteNotice = document.getElementById('deleteNotice');
+
+  // Fetch all envelopes
+  async function fetchEnvelopes() {
+  try {
+    const res = await fetch('/envelopes', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const data = await res.json();
+    renderEnvelopes(data.envelopes);
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+
+  // Render envelope table
+  function renderEnvelopes(envelopes) {
+    tableBody.innerHTML = '';
+    envelopes.forEach(env => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${env.id}</td>
+        <td>${env.category}</td>
+        <td>$${env.amount.toFixed(2)}</td>
+      `;
+      tableBody.appendChild(tr);
+    });
+  }
+
+  // Create envelope
+createForm.addEventListener('submit', async e => {
+  e.preventDefault();
+  const category = document.getElementById('newCategory').value.trim();
+  const amount = parseFloat(document.getElementById('newAmount').value);
+
+  try {
+    const res = await fetch('/envelopes', {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ category, amount })
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || "Failed to create envelope");
+
+    createNotice.textContent = `Envelope created: ${data.envelope.category} ($${data.envelope.amount})`;
+    createNotice.className = 'notice success';
+
+    fetchEnvelopes();
+  } catch (err) {
+    createNotice.textContent = err.message;
+    createNotice.className = 'notice error';
+  }
+});
+
+
+  // Transfer money
+  transferForm.addEventListener('submit', async e => {
+    e.preventDefault();
+    const from = document.getElementById('fromEnvelope').value;
+    const to = document.getElementById('toEnvelope').value;
+    const amount = parseFloat(document.getElementById('transferAmount').value);
+
+    try {
+      const res = await fetch(`/envelopes/transfer/${from}/${to}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
+      transferNotice.textContent = data.message;
+      transferNotice.className = 'notice success';
+      fetchEnvelopes();
+    } catch (err) {
+      transferNotice.textContent = err.message;
+      transferNotice.className = 'notice error';
+    }
+  });
+
+  // Withdraw money
+  withdrawForm.addEventListener('submit', async e => {
+    e.preventDefault();
+    const id = document.getElementById('withdrawId').value;
+    const amount = parseFloat(document.getElementById('withdrawAmount').value);
+
+    try {
+      const res = await fetch('/envelopes/withdraw', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, amount })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
+      withdrawNotice.textContent = data.message;
+      withdrawNotice.className = 'notice success';
+      fetchEnvelopes();
+    } catch (err) {
+      withdrawNotice.textContent = err.message;
+      withdrawNotice.className = 'notice error';
+    }
+  });
+
+  // Delete envelope
+  deleteForm.addEventListener('submit', async e => {
+    e.preventDefault();
+    const id = document.getElementById('deleteId').value;
+
+    try {
+      const res = await fetch('/envelopes/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+      });
+      if (!res.ok) throw new Error('Failed to delete envelope');
+      deleteNotice.textContent = 'Envelope deleted';
+      deleteNotice.className = 'notice success';
+      fetchEnvelopes();
+    } catch (err) {
+      deleteNotice.textContent = err.message;
+      deleteNotice.className = 'notice error';
+    }
+  });
+
+  // Load data on startup
+  fetchEnvelopes();
+</script>
+
+</body>
+</html> 
