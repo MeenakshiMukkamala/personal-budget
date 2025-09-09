@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const { DynamoDBDocumentClient, PutCommand } = require('@aws-sdk/lib-dynamodb');
 const { v4: uuidv4 } = require('uuid');
+const { Pool } = require('pg');
 require('dotenv').config();
 
 const app = express();
@@ -78,6 +79,54 @@ app.post('/api/envelopes', authenticateToken, async (req, res) => {
   } catch (err) {
     console.error('Failed to write to DynamoDB', { error: err });
     return res.status(500).json({ error: 'Failed to create envelope' });
+  }
+});
+
+// Postgres setup
+const pgConnectionString = process.env.PG_CONNECTION_STRING || process.env.DATABASE_URL;
+let pgPool = null;
+if (pgConnectionString) {
+  pgPool = new Pool({
+    connectionString: pgConnectionString,
+    ssl: process.env.PG_SSL === 'true' ? { rejectUnauthorized: false } : undefined,
+  });
+} else {
+  console.warn('Postgres not configured: set PG_CONNECTION_STRING or DATABASE_URL');
+}
+
+// Create envelope in Postgres
+app.post('/api/pg/envelopes', authenticateToken, async (req, res) => {
+  if (!pgPool) {
+    return res.status(500).json({ error: 'Postgres not configured' });
+  }
+
+  const { name, budget } = req.body || {};
+  if (!name || typeof name !== 'string') {
+    return res.status(400).json({ error: 'name is required' });
+  }
+  if (budget === undefined || budget === null || Number.isNaN(Number(budget))) {
+    return res.status(400).json({ error: 'budget is required and must be a number' });
+  }
+
+  const userId = req.user.sub || req.user.userId || req.user.id || 'unknown';
+  const table = process.env.PG_ENVELOPES_TABLE || 'envelopes';
+
+  // IMPORTANT: Do not include id in the insert list so DEFAULT applies
+  const text = `INSERT INTO ${table} (user_id, name, budget) VALUES ($1, $2, $3) RETURNING *`;
+  const values = [userId, name, Number(budget)];
+
+  try {
+    const result = await pgPool.query(text, values);
+    return res.status(201).json({ envelope: result.rows[0] });
+  } catch (err) {
+    console.error('Failed to write to Postgres', { error: err });
+    if (err && err.code === '23502' && (err.column === 'id' || /column\s+"?id"?/.test(String(err.message)))) {
+      return res.status(500).json({
+        error:
+          'id column is NULL. Omit id from INSERT and ensure the id column has DEFAULT/IDENTITY.',
+      });
+    }
+    return res.status(500).json({ error: 'Failed to create envelope in Postgres' });
   }
 });
 
