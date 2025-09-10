@@ -86,7 +86,16 @@
 </head>
 <body>
   <main class="card">
-    <h1>Envelope Dashboard</h1>
+    
+    <!-- Logout Button -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+      <h1>Envelope Dashboard</h1>
+      <button 
+        id="logoutButton" 
+        style="background-color: #e53e3e; color: white; border: none; padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer;">
+        Logout
+      </button>
+    </div>
 
     <!-- Create Envelope -->
     <form id="createEnvelopeForm">
@@ -164,7 +173,7 @@ const token = localStorage.getItem("idToken");
 
 if (!token) {
   alert("You are not logged in! Redirecting to login page.");
-  window.location.href = "login.html";
+  window.location.href = "index.html";
 }
 
   const createForm = document.getElementById('createEnvelopeForm');
@@ -178,6 +187,18 @@ if (!token) {
   const transferNotice = document.getElementById('transferNotice');
   const withdrawNotice = document.getElementById('withdrawNotice');
   const deleteNotice = document.getElementById('deleteNotice');
+
+  // Logout
+  const logoutButton = document.getElementById('logoutButton');
+
+logoutButton.addEventListener('click', () => {
+  // Clear username / token from localStorage
+  localStorage.removeItem('idToken');
+  localStorage.removeItem('username'); 
+
+  // Redirect to login page
+  window.location.href = 'index.html';
+});
 
   // Fetch all envelopes
   async function fetchEnvelopes() {

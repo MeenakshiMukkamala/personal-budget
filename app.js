@@ -56,8 +56,8 @@ function getSecretHash(username, clientId, clientSecret) {
 // Cognito signup route
 app.post('/signup', async (req, res) => {
   const { email, password } = req.body;
-  const clientId = '79bsi302esn08u8demmdgg8lig';
-  const clientSecret = '13mvan5d2b3urj3f17o2h73udeln9r3d167kdfj7tvjd8adp79u';
+  const clientId = '3193oeovm9e03qhi70shaokdf7';
+  const clientSecret = 'qpb6tv30ob2fe07rtsfeogk6djp4g4lv62el4u8fcha6t32qlp3';
 
   const username = email;
 
@@ -81,8 +81,8 @@ app.post('/signup', async (req, res) => {
 });
 app.post('/confirm', async (req, res) => {
   const { email, code } = req.body;
-  const clientId = '79bsi302esn08u8demmdgg8lig';
-  const clientSecret = '13mvan5d2b3urj3f17o2h73udeln9r3d167kdfj7tvjd8adp79u';
+  const clientId = '3193oeovm9e03qhi70shaokdf7';
+  const clientSecret = 'qpb6tv30ob2fe07rtsfeogk6djp4g4lv62el4u8fcha6t32qlp3';
     const username = email;
     if (!username) {
       return res.status(400).json({ message: 'User not found. Did you sign up?' });
@@ -106,8 +106,8 @@ app.post('/confirm', async (req, res) => {
 app.post('/login', async (req, res) => {
   const { email, password } = req.body;
 
-  const clientId = '79bsi302esn08u8demmdgg8lig';
-  const clientSecret = '13mvan5d2b3urj3f17o2h73udeln9r3d167kdfj7tvjd8adp79u';
+  const clientId = '3193oeovm9e03qhi70shaokdf7';
+  const clientSecret = 'qpb6tv30ob2fe07rtsfeogk6djp4g4lv62el4u8fcha6t32qlp3';
 
   const username = email; // retrieve the actual Cognito username
 
