@@ -103,24 +103,21 @@
       <div class="notice" id="createNotice"></div>
     </form>
 
-    <!-- Transfer Money -->
-    <form id="transferForm">
-      <h2>Transfer Money</h2>
+    <!-- Deposit Money -->
+    <form id="depositForm">
+      <h2>Deposit Money</h2>
       <div class="field">
-        <label for="fromEnvelope">From Envelope (ID)</label>
-        <input id="fromEnvelope" type="number" min="1" required />
+        <label for="depositCategory">Envelope Category</label>
+        <input id="depositCategory" type="text" required />
       </div>
       <div class="field">
-        <label for="toEnvelope">To Envelope (ID)</label>
-        <input id="toEnvelope" type="number" min="1" required />
+        <label for="depositAmount">Amount</label>
+        <input id="depositAmount" type="number" min="0" step="0.01" required />
       </div>
-      <div class="field">
-        <label for="transferAmount">Amount</label>
-        <input id="transferAmount" type="number" min="0" step="0.01" required />
-      </div>
-      <button type="submit">Transfer</button>
-      <div class="notice" id="transferNotice"></div>
+      <button type="submit">Deposit</button>
+      <div class="notice" id="depositNotice"></div>
     </form>
+
 
     <!-- Withdraw Money -->
     <form id="withdrawForm">
@@ -141,8 +138,8 @@
     <form id="deleteForm">
       <h2>Delete Envelope</h2>
       <div class="field">
-        <label for="deleteId">Envelope ID</label>
-        <input id="deleteId" type="number" min="1" required />
+        <label for="deleteCategory">Envelope Category</label>
+        <input id="deleteCategory" type="text" required />
       </div>
       <button type="submit">Delete</button>
       <div class="notice" id="deleteNotice"></div>
@@ -189,11 +186,14 @@ if (!token) {
       headers: { 'Authorization': `Bearer ${token}` }
       
     });
-
+    const total = await fetch('/totalBudget', {
+      headers: { 'Authorization': `Bearer ${token}` }
+      
+    });
     const data = await res.json();
-    console.log('Fetched envelopes:', data);
+    const total_data = await total.json();
 
-    renderEnvelopes(data.envelopes);
+    renderEnvelopes(data.envelopes, total_data.totalBudget);
   } catch (err) {
     console.error(err);
   }
@@ -201,7 +201,7 @@ if (!token) {
 
 
   // Render envelope table
-  function renderEnvelopes(envelopes) {
+  function renderEnvelopes(envelopes, totalBudget) {
   tableBody.innerHTML = '';
   envelopes.forEach(env => {
     const tr = document.createElement('tr');
@@ -213,6 +213,10 @@ if (!token) {
     `;
     tableBody.appendChild(tr);
   });
+  tableBody.appendChild(document.createElement('tr')).innerHTML = `
+    <td colspan="2"><strong>Total Budget</strong></td>
+    <td><strong>$${parseFloat(totalBudget).toFixed(2)}</strong></td>
+  `;
 }
 
 
@@ -245,31 +249,6 @@ createForm.addEventListener('submit', async e => {
   }
 });
 
-
-  // Transfer money
-  transferForm.addEventListener('submit', async e => {
-    e.preventDefault();
-    const from = document.getElementById('fromEnvelope').value;
-    const to = document.getElementById('toEnvelope').value;
-    const amount = parseFloat(document.getElementById('transferAmount').value);
-
-    try {
-      const res = await fetch(`/envelopes/transfer/${from}/${to}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message);
-      transferNotice.textContent = data.message;
-      transferNotice.className = 'notice success';
-      fetchEnvelopes();
-    } catch (err) {
-      transferNotice.textContent = err.message;
-      transferNotice.className = 'notice error';
-    }
-  });
-
   // Withdraw money
   withdrawForm.addEventListener('submit', async e => {
     e.preventDefault();
@@ -299,25 +278,61 @@ createForm.addEventListener('submit', async e => {
   }
   });
 
+   // Deposit money
+  depositForm.addEventListener('submit', async e => {
+    e.preventDefault();
+   const category = document.getElementById('depositCategory').value.trim();
+    const amount = parseFloat(document.getElementById('depositAmount').value);
+
+  try {
+    const res = await fetch('/envelopes/deposit', {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ category, amount })
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || "Failed to deposit to envelope");
+
+    depositNotice.textContent = `Deposit Success: ${data.envelope.category} ($${data.envelope.amount})`;
+    depositNotice.className = 'notice success';
+
+    fetchEnvelopes();
+  } catch (err) {
+    depositNotice.textContent = err.message;
+    depositNotice.className = 'notice error';
+  }
+  });
+
   // Delete envelope
   deleteForm.addEventListener('submit', async e => {
-    e.preventDefault();
-    const id = document.getElementById('deleteId').value;
+      e.preventDefault();
+    const category = document.getElementById('deleteCategory').value.trim();
 
-    try {
-      const res = await fetch('/envelopes/delete', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id })
-      });
-      if (!res.ok) throw new Error('Failed to delete envelope');
-      deleteNotice.textContent = 'Envelope deleted';
-      deleteNotice.className = 'notice success';
-      fetchEnvelopes();
-    } catch (err) {
-      deleteNotice.textContent = err.message;
-      deleteNotice.className = 'notice error';
-    }
+  try {
+    const res = await fetch('/envelopes/delete', {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ category })
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || "Failed to delete envelope");
+
+    deleteNotice.textContent = `Deletion Success: ${data.envelope.category}`;
+    deleteNotice.className = 'notice success';
+
+    fetchEnvelopes();
+  } catch (err) {
+    deleteNotice.textContent = err.message;
+    deleteNotice.className = 'notice error';
+  }
   });
 
   // Load data on startup

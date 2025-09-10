@@ -138,8 +138,6 @@ app.post('/login', async (req, res) => {
   }
 });
 
-let totalBudget = 0;
-
 // Create a new envelope
 app.post('/envelopes', authenticateJWT, async (req, res) => {
   const { category, amount } = req.body;
@@ -147,6 +145,17 @@ app.post('/envelopes', authenticateJWT, async (req, res) => {
   const username = req.user?.email; 
 
   try {
+    //Check if category already exists for the user
+    const existing = await pool.query(
+      'SELECT * FROM envelopes WHERE username=$1 AND category=$2',
+      [username, category]
+    );
+
+    if (existing.rows.length > 0) {
+      return res.status(400).json({ message: 'Category already exists! Try depositing money.' });
+  }
+
+  //Otherwise, create new envelope
     const result = await pool.query(
       'INSERT INTO envelopes (username, category, amount) VALUES ($1, $2, $3) RETURNING *;',
       [username, category, amount]
@@ -161,6 +170,8 @@ app.post('/envelopes', authenticateJWT, async (req, res) => {
     res.status(500).json({ message: 'Database error' });
   }
 });
+
+//Get all envelopes for the user
 app.get('/envelopes', authenticateJWT, async (req, res) => {
   const username = req.user?.email; 
   try {
@@ -200,44 +211,65 @@ app.post('/envelopes/withdraw', authenticateJWT, async (req, res) => {
   }
 });
 
-/** 
-//Get a specific envelope by Category
-app.get('/envelopes/:id', (req, res) => {
-  const envelope = envelopes.find(e => e.id === parseInt(req.params.id));
-  if (!envelope) {
-    return res.status(404).json({ message: 'Envelope not found' });
-  } 
-  res.json(envelope);
-});
+//Deposit money to an envelope
+app.post('/envelopes/deposit', authenticateJWT, async (req, res) => {
+  const { category, amount } = req.body;
 
+  const username = req.user?.email; 
 
+  try {
+    const result = await pool.query(
+      'UPDATE envelopes SET amount = amount + $3 WHERE username = $1 AND category = $2 RETURNING *;',
+      [username, category, amount]
+    );
 
-
-
-//Delete an envelope
-app.post('/envelopes/delete', (req, res) => {
-  const { id } = req.body;
-  envelopes = envelopes.filter(e => e.id != parseInt(id));
-});
-
-//Transfer money between envelopes
-app.post('/envelopes/transfer/:from/:to', (req, res) => {
-  const envelope_from = envelopes.find(e => e.id === parseInt(req.params.from));
-  const envelope_to = envelopes.find(e => e.id === parseInt(req.params.to));
-  if (!envelope_from) {
-    return res.status(404).json({ message: 'Envelope from not found' });
-  } 
-  if (!envelope_to) {
-    return res.status(404).json({ message: 'Envelope to not found' });
+    res.status(201).json({
+      message: 'Money deposited',
+      envelope: result.rows[0]
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Database error' });
   }
-  envelope_from.amount -= req.body.amount;
-  envelope_to.amount += req.body.amount;
-  res.json({
-    message: 'Transfer successful',
-    envelope_from,
-    envelope_to
-  });
-});*/
+});
+
+app.post('/envelopes/delete', authenticateJWT, async (req, res) => {
+  const { category } = req.body;
+  const username = req.user?.email; 
+
+   try {
+    const result = await pool.query(
+      'DELETE FROM envelopes WHERE username = $1 AND category = $2 RETURNING *;',
+      [username, category]
+    );
+
+    res.status(201).json({
+      message: 'Envelope deleted',
+      envelope: result.rows[0]
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Database error' });
+  }
+
+});
+
+
+//Get total budget across all envelopes for the user
+app.get('/totalBudget', authenticateJWT, async (req, res) => {
+  const username = req.user?.email; 
+  try {
+    const result = await pool.query(
+      'SELECT SUM(amount) AS total FROM envelopes WHERE username = $1;',
+      [username]
+    );
+    const totalBudget = result.rows[0].total || 0;
+    res.json({ totalBudget });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Database error' });
+  }     
+});
 
 //Start the server
 app.listen(PORT, () => {
