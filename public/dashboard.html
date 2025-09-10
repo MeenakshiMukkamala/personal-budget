@@ -163,10 +163,7 @@
   </main>
  
 <script>
-    console.log("HELLO:");
-
-  const token = localStorage.getItem("idToken");
-  console.log("Token:", token);
+const token = localStorage.getItem("idToken");
 
 if (!token) {
   alert("You are not logged in! Redirecting to login page.");
@@ -190,8 +187,12 @@ if (!token) {
   try {
     const res = await fetch('/envelopes', {
       headers: { 'Authorization': `Bearer ${token}` }
+      
     });
+
     const data = await res.json();
+    console.log('Fetched envelopes:', data);
+
     renderEnvelopes(data.envelopes);
   } catch (err) {
     console.error(err);
@@ -201,17 +202,19 @@ if (!token) {
 
   // Render envelope table
   function renderEnvelopes(envelopes) {
-    tableBody.innerHTML = '';
-    envelopes.forEach(env => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${env.id}</td>
-        <td>${env.category}</td>
-        <td>$${env.amount.toFixed(2)}</td>
-      `;
-      tableBody.appendChild(tr);
-    });
-  }
+  tableBody.innerHTML = '';
+  envelopes.forEach(env => {
+    const tr = document.createElement('tr');
+    const amount = parseFloat(env.amount) || 0;  // convert string to number
+    tr.innerHTML = `
+      <td>${env.id}</td>
+      <td>${env.category}</td>
+      <td>$${amount.toFixed(2)}</td>
+    `;
+    tableBody.appendChild(tr);
+  });
+}
+
 
   // Create envelope
 createForm.addEventListener('submit', async e => {

@@ -23,8 +23,9 @@ function authenticateJWT(req, res, next) {
   if (authHeader) {
     const token = authHeader.split(' ')[1];
     try {
-      const decoded = jwt.decode(token); // or verify with secret if needed
-      req.user = { email: decoded.email };
+      const decoded = jwt.decode(token); 
+    
+      req.user = { email: decoded.email || decoded['cognito:username'] };
       next();
     } catch (err) {
       return res.sendStatus(403);
@@ -160,10 +161,8 @@ app.post('/envelopes', authenticateJWT, async (req, res) => {
     res.status(500).json({ message: 'Database error' });
   }
 });
-
 app.get('/envelopes', authenticateJWT, async (req, res) => {
-  const username = req.user?.email; // from JWT
-
+  const username = req.user?.email; 
   try {
     const result = await pool.query(
       'SELECT * FROM envelopes WHERE username = $1 ORDER BY id',
