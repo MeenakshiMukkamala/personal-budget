@@ -14,6 +14,23 @@
             "database": "personalbudget",
             "name": "localdatabase",
             "password": ""
+        },
+        {
+            "pgOptions": {
+                "ssl": {
+                    "rejectUnauthorized": true,
+                    "requestCert": true,
+                    "ca": "/Users/meenakshi/Downloads/us-west-1-bundle.pem"
+                }
+            },
+            "ssh": "Disabled",
+            "previewLimit": 50,
+            "server": "personalbudget.cv2g8862qt8s.us-west-1.rds.amazonaws.com",
+            "port": 5432,
+            "driver": "PostgreSQL",
+            "username": "postgres",
+            "database": "personalbudget",
+            "name": "MyRDS"
         }
     ]
 }

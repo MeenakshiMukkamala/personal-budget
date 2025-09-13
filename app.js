@@ -1,21 +1,37 @@
-const express = require('express');
-const app = express();
-const PORT = 3000;
-app.use(express.static('public'));
-app.use(express.json()); 
+
+const PORT = process.env.PORT || 8080;
 const crypto = require('crypto');
 
 const { Pool } = require('pg');
 
 const pool = new Pool({
-  user: 'meenakshi',
-  host: 'localhost',
-  database: 'personalbudget',
-  password: '',
-  port: 5432,
+  user: process.env.DB_USER,
+  host: process.env.DB_HOST,
+  database: process.env.DB_NAME,
+  password: process.env.DB_PASSWORD,
+  port: process.env.DB_PORT,
+   ssl: { rejectUnauthorized: false } 
 });
 
 
+const express = require('express');
+const app = express();
+app.use(express.json()); 
+
+app.get('/db-test', async (req, res) => {
+  try {
+    const result = await pool.query("SELECT tablename FROM pg_tables WHERE schemaname='public';");
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).send(err.message);
+  }
+});
+
+app.use(express.static('public'));
+
+pool.connect()
+  .then(() => console.log('Connected to RDS successfully'))
+  .catch(err => console.error('DB connection error:', err));
 const jwt = require('jsonwebtoken');
 
 function authenticateJWT(req, res, next) {
@@ -273,7 +289,7 @@ app.get('/totalBudget', authenticateJWT, async (req, res) => {
 
 //Start the server
 app.listen(PORT, () => {
-  console.log('Server running at http://localhost:3000/');
+  console.log('Server running at ' + PORT);
 });
 
 

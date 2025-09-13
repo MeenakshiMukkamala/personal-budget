@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -7,7 +8,9 @@
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@500;600&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@500;600&display=swap"
+    rel="stylesheet">
   <style>
     :root {
       --bg: #d6ebff;
@@ -20,7 +23,10 @@
       --input-border: #cfe8ff;
     }
 
-    * { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       margin: 0;
       font-family: Inter, sans-serif;
@@ -31,7 +37,11 @@
       padding: 2rem;
     }
 
-    h1 { font-family: Poppins, sans-serif; text-align: center; margin-bottom: 1rem; }
+    h1 {
+      font-family: Poppins, sans-serif;
+      text-align: center;
+      margin-bottom: 1rem;
+    }
 
     .card {
       width: 100%;
@@ -42,11 +52,24 @@
       padding: 2rem;
     }
 
-    form { display: grid; gap: 1rem; margin-bottom: 2rem; }
+    form {
+      display: grid;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
 
-    .field { display: grid; gap: .4rem; }
-    label { font-weight: 600; font-size: .9rem; }
-    input, select {
+    .field {
+      display: grid;
+      gap: .4rem;
+    }
+
+    label {
+      font-weight: 600;
+      font-size: .9rem;
+    }
+
+    input,
+    select {
       padding: .85rem 1rem;
       border: 1.5px solid var(--input-border);
       border-radius: 12px;
@@ -54,7 +77,11 @@
       font-size: 1rem;
       outline: none;
     }
-    input:focus, select:focus { border-color: var(--primary); }
+
+    input:focus,
+    select:focus {
+      border-color: var(--primary);
+    }
 
     button {
       cursor: pointer;
@@ -66,36 +93,63 @@
       color: white;
       transition: all .2s ease;
     }
-    button:hover { background: var(--primary-hover); }
+
+    button:hover {
+      background: var(--primary-hover);
+    }
 
     table {
       width: 100%;
       border-collapse: collapse;
       margin-top: 1rem;
     }
-    th, td {
+
+    th,
+    td {
       border: 1px solid #cfe8ff;
       padding: .75rem 1rem;
       text-align: center;
     }
-    th { background: #e1f0ff; }
-    .notice { margin-top: .5rem; font-size: .9rem; min-height: 1.2rem; }
-    .notice.error { color: var(--error); }
-    .notice.success { color: var(--success); }
+
+    th {
+      background: #e1f0ff;
+    }
+
+    .notice {
+      margin-top: .5rem;
+      font-size: .9rem;
+      min-height: 1.2rem;
+    }
+
+    .notice.error {
+      color: var(--error);
+    }
+
+    .notice.success {
+      color: var(--success);
+    }
   </style>
 </head>
+
 <body>
   <main class="card">
-    
-    <!-- Logout Button -->
+
+    <!-- Title + Buttons + Logout Row -->
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-      <h1>Envelope Dashboard</h1>
-      <button 
-        id="logoutButton" 
-        style="background-color: #e53e3e; color: white; border: none; padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer;">
-        Logout
-      </button>
+      <h1 style="margin: 0;">Envelope Dashboard</h1>
+      <div style="display: flex; gap: 0.5rem;">
+        <button onclick="window.location.href='trends.html'"
+          style="background-color: #2b6cb0; color: white; border: none; padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer;">
+          Go to Trends
+        </button>
+        <button onclick="logout()"
+          id="logoutButton" 
+          style="background-color: #e53e3e; color: white; border: none; padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer;">
+          Logout
+        </button>
+      </div>
     </div>
+
 
     <!-- Create Envelope -->
     <form id="createEnvelopeForm">
@@ -167,196 +221,197 @@
       <tbody id="envelopeTableBody"></tbody>
     </table>
   </main>
- 
-<script>
-const token = localStorage.getItem("idToken");
 
-if (!token) {
-  alert("You are not logged in! Redirecting to login page.");
-  window.location.href = "index.html";
-}
+  <script>
+    const token = localStorage.getItem("idToken");
 
-  const createForm = document.getElementById('createEnvelopeForm');
-  const transferForm = document.getElementById('transferForm');
-  const withdrawForm = document.getElementById('withdrawForm');
-  const deleteForm = document.getElementById('deleteForm');
-  const tableBody = document.getElementById('envelopeTableBody');
+    if (!token) {
+      alert("You are not logged in! Redirecting to login page.");
+      window.location.href = "index.html";
+    }
 
-  // Notices
-  const createNotice = document.getElementById('createNotice');
-  const transferNotice = document.getElementById('transferNotice');
-  const withdrawNotice = document.getElementById('withdrawNotice');
-  const deleteNotice = document.getElementById('deleteNotice');
+    const createForm = document.getElementById('createEnvelopeForm');
+    const transferForm = document.getElementById('transferForm');
+    const withdrawForm = document.getElementById('withdrawForm');
+    const deleteForm = document.getElementById('deleteForm');
+    const tableBody = document.getElementById('envelopeTableBody');
 
-  // Logout
-  const logoutButton = document.getElementById('logoutButton');
+    // Notices
+    const createNotice = document.getElementById('createNotice');
+    const transferNotice = document.getElementById('transferNotice');
+    const withdrawNotice = document.getElementById('withdrawNotice');
+    const deleteNotice = document.getElementById('deleteNotice');
 
-logoutButton.addEventListener('click', () => {
-  // Clear username / token from localStorage
-  localStorage.removeItem('idToken');
-  localStorage.removeItem('username'); 
+    // Logout
+    const logoutButton = document.getElementById('logoutButton');
 
-  // Redirect to login page
-  window.location.href = 'index.html';
-});
+    logoutButton.addEventListener('click', () => {
+      // Clear username / token from localStorage
+      localStorage.removeItem('idToken');
+      localStorage.removeItem('username');
 
-  // Fetch all envelopes
-  async function fetchEnvelopes() {
-  try {
-    const res = await fetch('/envelopes', {
-      headers: { 'Authorization': `Bearer ${token}` }
-      
+      // Redirect to login page
+      window.location.href = 'index.html';
     });
-    const total = await fetch('/totalBudget', {
-      headers: { 'Authorization': `Bearer ${token}` }
-      
-    });
-    const data = await res.json();
-    const total_data = await total.json();
 
-    renderEnvelopes(data.envelopes, total_data.totalBudget);
-  } catch (err) {
-    console.error(err);
-  }
-}
+    // Fetch all envelopes
+    async function fetchEnvelopes() {
+      try {
+        const res = await fetch('/envelopes', {
+          headers: { 'Authorization': `Bearer ${token}` }
+
+        });
+        const total = await fetch('/totalBudget', {
+          headers: { 'Authorization': `Bearer ${token}` }
+
+        });
+        const data = await res.json();
+        const total_data = await total.json();
+
+        renderEnvelopes(data.envelopes, total_data.totalBudget);
+      } catch (err) {
+        console.error(err);
+      }
+    }
 
 
-  // Render envelope table
-  function renderEnvelopes(envelopes, totalBudget) {
-  tableBody.innerHTML = '';
-  envelopes.forEach(env => {
-    const tr = document.createElement('tr');
-    const amount = parseFloat(env.amount) || 0;  // convert string to number
-    tr.innerHTML = `
+    // Render envelope table
+    function renderEnvelopes(envelopes, totalBudget) {
+      tableBody.innerHTML = '';
+      envelopes.forEach(env => {
+        const tr = document.createElement('tr');
+        const amount = parseFloat(env.amount) || 0;  // convert string to number
+        tr.innerHTML = `
       <td>${env.id}</td>
       <td>${env.category}</td>
       <td>$${amount.toFixed(2)}</td>
     `;
-    tableBody.appendChild(tr);
-  });
-  tableBody.appendChild(document.createElement('tr')).innerHTML = `
+        tableBody.appendChild(tr);
+      });
+      tableBody.appendChild(document.createElement('tr')).innerHTML = `
     <td colspan="2"><strong>Total Budget</strong></td>
     <td><strong>$${parseFloat(totalBudget).toFixed(2)}</strong></td>
   `;
-}
+    }
 
 
-  // Create envelope
-createForm.addEventListener('submit', async e => {
-  e.preventDefault();
-  const category = document.getElementById('newCategory').value.trim();
-  const amount = parseFloat(document.getElementById('newAmount').value);
-
-  try {
-    const res = await fetch('/envelopes', {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({ category, amount })
-    });
-
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || "Failed to create envelope");
-
-    createNotice.textContent = `Envelope created: ${data.envelope.category} ($${data.envelope.amount})`;
-    createNotice.className = 'notice success';
-
-    fetchEnvelopes();
-  } catch (err) {
-    createNotice.textContent = err.message;
-    createNotice.className = 'notice error';
-  }
-});
-
-  // Withdraw money
-  withdrawForm.addEventListener('submit', async e => {
-    e.preventDefault();
-   const category = document.getElementById('withdrawCategory').value.trim();
-  const amount = parseFloat(document.getElementById('withdrawAmount').value);
-
-  try {
-    const res = await fetch('/envelopes/withdraw', {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({ category, amount })
-    });
-
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || "Failed to withdraw from envelope");
-
-    withdrawNotice.textContent = `Withdrawal Success: ${data.envelope.category} ($${data.envelope.amount})`;
-    withdrawNotice.className = 'notice success';
-
-    fetchEnvelopes();
-  } catch (err) {
-    withdrawNotice.textContent = err.message;
-    withdrawNotice.className = 'notice error';
-  }
-  });
-
-   // Deposit money
-  depositForm.addEventListener('submit', async e => {
-    e.preventDefault();
-   const category = document.getElementById('depositCategory').value.trim();
-    const amount = parseFloat(document.getElementById('depositAmount').value);
-
-  try {
-    const res = await fetch('/envelopes/deposit', {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({ category, amount })
-    });
-
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || "Failed to deposit to envelope");
-
-    depositNotice.textContent = `Deposit Success: ${data.envelope.category} ($${data.envelope.amount})`;
-    depositNotice.className = 'notice success';
-
-    fetchEnvelopes();
-  } catch (err) {
-    depositNotice.textContent = err.message;
-    depositNotice.className = 'notice error';
-  }
-  });
-
-  // Delete envelope
-  deleteForm.addEventListener('submit', async e => {
+    // Create envelope
+    createForm.addEventListener('submit', async e => {
       e.preventDefault();
-    const category = document.getElementById('deleteCategory').value.trim();
+      const category = document.getElementById('newCategory').value.trim();
+      const amount = parseFloat(document.getElementById('newAmount').value);
 
-  try {
-    const res = await fetch('/envelopes/delete', {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({ category })
+      try {
+        const res = await fetch('/envelopes', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ category, amount })
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || "Failed to create envelope");
+
+        createNotice.textContent = `Envelope created: ${data.envelope.category} ($${data.envelope.amount})`;
+        createNotice.className = 'notice success';
+
+        fetchEnvelopes();
+      } catch (err) {
+        createNotice.textContent = err.message;
+        createNotice.className = 'notice error';
+      }
     });
 
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || "Failed to delete envelope");
+    // Withdraw money
+    withdrawForm.addEventListener('submit', async e => {
+      e.preventDefault();
+      const category = document.getElementById('withdrawCategory').value.trim();
+      const amount = parseFloat(document.getElementById('withdrawAmount').value);
 
-    deleteNotice.textContent = `Deletion Success: ${data.envelope.category}`;
-    deleteNotice.className = 'notice success';
+      try {
+        const res = await fetch('/envelopes/withdraw', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ category, amount })
+        });
 
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || "Failed to withdraw from envelope");
+
+        withdrawNotice.textContent = `Withdrawal Success: ${data.envelope.category} ($${data.envelope.amount})`;
+        withdrawNotice.className = 'notice success';
+
+        fetchEnvelopes();
+      } catch (err) {
+        withdrawNotice.textContent = err.message;
+        withdrawNotice.className = 'notice error';
+      }
+    });
+
+    // Deposit money
+    depositForm.addEventListener('submit', async e => {
+      e.preventDefault();
+      const category = document.getElementById('depositCategory').value.trim();
+      const amount = parseFloat(document.getElementById('depositAmount').value);
+
+      try {
+        const res = await fetch('/envelopes/deposit', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ category, amount })
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || "Failed to deposit to envelope");
+
+        depositNotice.textContent = `Deposit Success: ${data.envelope.category} ($${data.envelope.amount})`;
+        depositNotice.className = 'notice success';
+
+        fetchEnvelopes();
+      } catch (err) {
+        depositNotice.textContent = err.message;
+        depositNotice.className = 'notice error';
+      }
+    });
+
+    // Delete envelope
+    deleteForm.addEventListener('submit', async e => {
+      e.preventDefault();
+      const category = document.getElementById('deleteCategory').value.trim();
+
+      try {
+        const res = await fetch('/envelopes/delete', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ category })
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || "Failed to delete envelope");
+
+        deleteNotice.textContent = `Deletion Success: ${data.envelope.category}`;
+        deleteNotice.className = 'notice success';
+
+        fetchEnvelopes();
+      } catch (err) {
+        deleteNotice.textContent = err.message;
+        deleteNotice.className = 'notice error';
+      }
+    });
+
+    // Load data on startup
     fetchEnvelopes();
-  } catch (err) {
-    deleteNotice.textContent = err.message;
-    deleteNotice.className = 'notice error';
-  }
-  });
+  </script>
 
-  // Load data on startup
-  fetchEnvelopes();
-</script>
-</html> 
+</html>
