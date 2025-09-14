@@ -138,10 +138,6 @@
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
       <h1 style="margin: 0;">Envelope Dashboard</h1>
       <div style="display: flex; gap: 0.5rem;">
-        <button onclick="window.location.href='trends.html'"
-          style="background-color: #2b6cb0; color: white; border: none; padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer;">
-          Go to Trends
-        </button>
         <button onclick="logout()"
           id="logoutButton" 
           style="background-color: #e53e3e; color: white; border: none; padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer;">
@@ -316,7 +312,8 @@
 
         createNotice.textContent = `Envelope created: ${data.envelope.category} ($${data.envelope.amount})`;
         createNotice.className = 'notice success';
-
+      
+        createForm.reset(); 
         fetchEnvelopes();
       } catch (err) {
         createNotice.textContent = err.message;
@@ -346,6 +343,7 @@
         withdrawNotice.textContent = `Withdrawal Success: ${data.envelope.category} ($${data.envelope.amount})`;
         withdrawNotice.className = 'notice success';
 
+        withdrawForm.reset();
         fetchEnvelopes();
       } catch (err) {
         withdrawNotice.textContent = err.message;
@@ -375,6 +373,7 @@
         depositNotice.textContent = `Deposit Success: ${data.envelope.category} ($${data.envelope.amount})`;
         depositNotice.className = 'notice success';
 
+        depositForm.reset();
         fetchEnvelopes();
       } catch (err) {
         depositNotice.textContent = err.message;
@@ -403,6 +402,7 @@
         deleteNotice.textContent = `Deletion Success: ${data.envelope.category}`;
         deleteNotice.className = 'notice success';
 
+        deleteForm.reset();
         fetchEnvelopes();
       } catch (err) {
         deleteNotice.textContent = err.message;
